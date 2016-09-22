@@ -88,7 +88,55 @@ upper_p_value = normal_probability_above
 lower_p_value = normal_probability_below
 
 ## P-hacking
+def run_experiment():
+    """
+    Flip fair coin 1000 times.  True = H, False = T
+    """
+    return [random.random() < 0.5 for _ in range(1000)]
 
+
+def reject_fairness(experiment):
+    """
+    Use 5% significance levels
+    """
+    num_heads = len([flip for flip in experiment if flip])
+    return num_heads < 469 or num_heads > 531
+
+## A/B TESTING
+def estimated_parameters(N, n):
+    """
+    N = views, n = clicks
+    """
+    p = n / N
+    sigma = math.sqrt(p * (1 - p) / N)
+    return p, sigma
+
+
+def a_b_test_statistic(N_A, n_A, N_B, n_B):
+    """
+    Test null hypothesis
+    """
+    p_A, sigma_A = estimated_parameters(N_A, n_A)
+    p_B, sigma_B = estimated_parameters(N_B, n_B)
+    return (p_B - p_A) / math.sqrt(sigma_A ** 2 + sigma_B **2)
+
+
+##  BAYESIAN INFERENCE
+def B(alpha, beta):
+    """
+    Normalizing constant, make probability = 1
+    """
+    return math.gamma(alpha) * math.gamma(beta) / math.gamma(alpha + beta)
+
+
+def beta_pdf(x, alpha, beta):
+    """
+    Create beta PDF
+    NOTE - generally centered at alpha / (alpha + beta)
+    """
+    if x < 0 or x > 1:
+        return 0            #  Gotta be between [0, 1]
+    return x ** (alpha - 1) * (1 - x) ** (beta - 1) / B(alpha, beta)
 
 
 if __name__ == "__main__":
@@ -139,7 +187,7 @@ if __name__ == "__main__":
 
     print "P-hacking"
 
-    random.seed(0)
+    random.seed(11)
     experiments = [run_experiment() for _ in range(1000)]
     num_rejections = len([experiment
                           for experiment in experiments
