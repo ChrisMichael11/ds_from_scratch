@@ -87,7 +87,7 @@ def inverse_normal_cdf(p, mu=0, sigma=1, tolerance=0.00001):
             low_z, low_p = mid_z, mid_p
         elif mid_p > p:
             #  midpoint too high, search below
-            hi_z. hi_p = mid_z, mid_p
+            hi_z, hi_p = mid_z, mid_p
         else:
             break
     return mid_z
