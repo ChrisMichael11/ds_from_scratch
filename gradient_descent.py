@@ -25,7 +25,7 @@ def plot_estimated_derivative():
         """
         Square a value
         """
-        return x ** x
+        return x * x
 
     def derivative(x):
         """
@@ -64,7 +64,7 @@ def step(v, direction, step_size):
     Move step_size in direction from v
     """
     return [v_i + step_size * direction_i
-                for v_i, diretion_i in zip(v, direction)]
+                for v_i, direction_i in zip(v, direction)]
 
 def sum_of_squares_gradient(v):
     """
@@ -159,7 +159,37 @@ def minimize_stochastic(target_fn, gradient_fn, x, y, theta_0, alpha_0=0.01):
     iterations_with_no_improvement = 0
 
     #  If go 100 iterations w/no improvment, stop
-    
+    while iterations_with_no_improvement < 100:
+        value = sum(target_fn(x_i, y_i, theta) for x_i, y_i in data)
+
+        if value < min_value:
+            #  If find new minimum, remember it
+            #  Go back to OG step_size
+            min_theta, min_value = theta, value
+            iterations_with_no_improvement = 0
+            alpha = alpha_0
+        else:
+            #  Otherwies, not improving, shrink step_size
+            iterations_with_no_improvement += 1
+            alpha *= 0.9
+
+        #  Take gradient step for each data points
+        for x_i, y_i in in_random_order(data):
+            gradient_i = gradient_fn(x_i, y_i, theta)
+            theta = vector_subtract(theta, scalar_multiply(alpha, gradient_i))
+
+    return min_theta
+
+
+def maximize_stochastic(target_fn, gradient_fn, x, y, theta_0, alpha_0 = 0.01):
+    """
+    Same as minimize, but negate
+    """
+    return minimize_stochastic(negate(target_fn),
+                               negate_all(gradient_fn),
+                               x, y, theta_0, alpha_0)
+
+
 
 
 if __name__ == "__main__":
