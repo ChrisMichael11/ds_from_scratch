@@ -127,8 +127,8 @@ def parse_row(input_row, parsers):
     Given list of parsers (can be None), apply appropriate one to each element
     of input_row
     """
-    return [parser(value) if parser is not None else value for value, parser
-                    in zip(input_row, parser)]
+    return [try_or_none(parser)(value) if parser is not None else value
+        for value, parser in zip(input_row, parsers)]
 
 def parse_rows_with(reader, parsers):
     """
@@ -156,6 +156,11 @@ def try_parse_field(field_name, value, parser_dict):
         return try_or_none(parser)(value)
     else:
         return value
+
+
+def parse_dict(input_dict, parser_dict):
+    return { field_name : try_parse_field(field_name, value, parser_dict)
+             for field_name, value in input_dict.iteritems() }
 
 
 ##  MANIPULATING DATA
@@ -467,26 +472,86 @@ def transform(X, components):
     return [transform_vector(x_i, components) for x_i in X]
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
-    pass
+    print "correlation(xs, ys1)", correlation(xs, ys1)      #0.888984042675
+    print "correlation(xs, ys2)", correlation(xs, ys2)      #-0.899320350063
+
+    ##  Safe parsing
+    data = []
+
+    with open("comma_delimited_stock_prices.csv", "rb") as f:
+        reader = csv.reader(f)
+        for line in parse_rows_with(reader, [dateutil.parser.parse, None, float]):
+            data.append(line)
+
+    for row in data:
+        if any(x is None for x in row):
+            print row
+
+    print "STOCKS!!!"
+    with open("stocks.txt", "rb") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        data = [parse_dict(row, { 'date' : dateutil.parser.parse,
+                                  'closing_price' : float }) for row in reader]
+
+    max_aapl_price = max(row["closing_price"]
+                         for row in data
+                         if row["symbol"] == "AAPL")
+    print "Max AAPL Price", max_aapl_price
+
+    #  Group rows by symbol
+    by_symbol = defaultdict(list)
+
+    for row in data:
+        by_symbol[row["symbol"]].append(row)
+
+    # Use a dict comprehension to find the max for each symbol
+    max_price_by_symbol = { symbol : max(row["closing_price"]
+                            for row in grouped_rows)
+                            for symbol, grouped_rows in by_symbol.iteritems() }
+    print "Max Price by Symbol"
+    print max_price_by_symbol
+
+    # Key is symbol, value is list of "change" dicts
+    changes_by_symbol = group_by(picker("symbol"), data, day_over_day_changes)
+    # Collect all "change" dicts into one big list
+    all_changes = [change
+                   for changes in changes_by_symbol.values()
+                   for change in changes]
+
+    print "Max Change", max(all_changes, key=picker("change"))
+    print "Min Change", min(all_changes, key=picker("change"))
+
+    # to combine percent changes, we add 1 to each, multiply them, and subtract 1
+    # for instance, if we combine +10% and -20%, the overall change is
+    # (1 + 10%) * (1 - 20%) - 1 = 1.1 * .8 - 1 = -12%
+    def combine_pct_changes(pct_change1, pct_change2):
+        return (1 + pct_change1) * (1 + pct_change2) - 1
+
+    def overall_change(changes):
+        return reduce(combine_pct_changes, pluck("change", changes))
+
+    overall_change_by_month = group_by(lambda row: row['date'].month,
+                                       all_changes,
+                                       overall_change)
+    print "Overall Change by Month"
+    print overall_change_by_month
+
+    print "RESCALING!!!"
+
+    data = [[1, 20, 2],
+            [1, 30, 3],
+            [1, 40, 4]]
+
+    print "Original: ", data
+    print "Scale: ", scale(data)
+    print "Rescaled: ", rescale(data)
+    print
+
+    print "Principal Component Analysis - PCA"
+
+    Y = de_mean_matrix(X)
+    components = principal_component_analysis(Y, 2)
+    print "principal components", components
+    print "first point", Y[0]
+    print "first point transformed", transform_vector(Y[0], components)
