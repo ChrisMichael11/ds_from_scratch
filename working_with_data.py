@@ -1,32 +1,35 @@
 from __future__ import division
 from collections import Counter, defaultdict
 from functools import partial
-from linear_algebra import shape, get_row, get_column, make_matrix, vector_mean, \
-        vector_sum, dot, magnitude, vector_subtract, scalar_multiply
+from linear_algebra import shape, get_row, get_column, make_matrix, \
+    vector_mean, vector_sum, dot, magnitude, vector_subtract, scalar_multiply
 from statistics import correlation, standard_deviation, mean
 from probability import inverse_normal_cdf
 from gradient_descent import maximize_batch
 import math, random, csv
 import matplotlib.pyplot as plt
 import dateutil.parser
-
+import pdb
 
 def bucketize(point, bucket_size):
     """
-    Floor the point to the next lower multiple of bucket_size
+    Floor point to next lower multiple of bucket_size
     """
     return bucket_size * math.floor(point / bucket_size)
 
 
 def make_histogram(points, bucket_size):
     """
-    Bucket points and counts how many in each bucket
+    Bucket points and count number in each bucket
     """
     return Counter(bucketize(point, bucket_size) for point in points)
 
 
 def plot_histogram(points, bucket_size, title=""):
-    historgram = make_histogram(points, bucket_size)
+    """
+    Plot that histogram
+    """
+    histogram = make_histogram(points, bucket_size)
     plt.bar(histogram.keys(), histogram.values(), width=bucket_size)
     plt.title(title)
     plt.show()
@@ -34,20 +37,19 @@ def plot_histogram(points, bucket_size, title=""):
 
 def compare_two_distributions():
     """
-    Compare two distrubtions w/Histogram
+    Plot histogram of Uniform and Normal Distributions
     """
     random.seed(11)
-
-    uniform = [random.randrange(-100, 101) for _ in range(200)]
-    normal = [57 * inverse_normal_cdf(random.random()) for _ in range(200)]
+    uniform = [200 * random.random() - 100 for _ in range(10000)]
+    normal = [57 * inverse_normal_cdf(random.random()) for _ in range(10000)]
 
     plot_histogram(uniform, 10, "Uniform Histogram")
-    plot_histogram(normal, 10, "Normal Histrogram")
+    plot_histogram(normal, 10, "Normal Histogram")
 
 
 def random_normal():
     """
-    Returns random draw from Standard Noral distribution
+    Return random draw from standard normal distribution
     """
     return inverse_normal_cdf(random.random())
 
@@ -58,88 +60,91 @@ ys2 = [-x + random_normal() / 2 for x in xs]
 
 def scatter():
     """
-    Create Scatter plot
+    Create scatter plot
     """
     plt.scatter(xs, ys1, marker='.', color='black', label='ys1')
-    plt.scatter(xz, ys2, marker='.', color='gray', label='ys2')
+    plt.scatter(xs, ys2, marker='.', color='gray', label='ys2')
     plt.xlabel('xs')
     plt.ylabel('ys')
     plt.legend(loc=9)
     plt.show()
 
-
 def correlation_matrix(data):
     """
-    Returns the num_columns x num_columns matrix  whose (i. j)th entry
-    is the correlation between columns i and j of data"
+    Returns the num_columns x num_columns matrix whose (i. j)th entry is the
+    correlation between the columns of i and j of data
     """
-
     _, num_columns = shape(data)
 
-    def matrix_entry(i, j):
+    def matrx_entry(i, j):
         return correlation(get_column(data, i), get_column(data, j))
-
-    return make_matrix(num_clumns, num_columns, matrix_entry)
+    return make_matrix(num_columns, num_columns, matrix_entry)
 
 
 def make_scatterplot_matrix():
-    #  Generate Random data
+    """
+    Create scatterplot
+    """
     num_points = 100
 
     def random_row():
         row = [None, None, None, None]
         row[0] = random_normal()
         row[1] = -5 * row[0] + random_normal()
-        row[2] = row[0] + row[1] + 5 + random_normal()
+        row[2] = row[0] + row[1] + 5 * random_normal()
         row[3] = 6 if row[2] > -2 else 0
         return row
+
     random.seed(11)
     data = [random_row() for _ in range(num_points)]
 
-    ## Plot it!
+    #  PLOT IT!!!
 
     _, num_columns = shape(data)
     fig, ax = plt.subplots(num_columns, num_columns)
 
     for i in range(num_columns):
         for j in range(num_columns):
-            #  Scatter column_j on the x-axis vs column_i on the y-axis
-            if i != j: ax[i][j].scatter(get_coulmn(data, j), get_column(data, i))
 
-            #  Unless i == j, then show series
-        else: ax[i][j].annotate("Series " + str(i), (0.5, 0.5),
-                                xycoords='Axes Fraction',
-                                ha="center", va="center")
+            #  Scatter col J on the x-axis and col I on the y-axis
+            if i != j: ax[i][j].scatter(get_column(data, j), get_column(data, i))
 
-        #  Hide axis labels, except at left and bottom charts
-        if i < num_columns - 1: ax[i][j].xaxis.set_visible(False)
-        if j > 0: ax[i][j].yaxis.set_visible(False)
+            #  if i == j, show series name
+            else: ax[i][j].annotate("series" + str(i), (0.5, 0.5),
+                                    xycoords='Axes Fraction',
+                                    ha='center', va='center')
+            #  Fix bottom R and top L axis labels,
+            #  They are wrong because charts only have text
+            if i < num_columns - 1: ax[i][j].xaxis.set_visible(False)
+            if j > 0: ax[i][j].yaxis.set_visible(False)
 
-    #  Fix bottom right and top left axis lables, which are wrong
-    #  Chars only ahve text!
+    #  Fix bottom R and top L axis labels, wrong because charts are text only
     ax[-1][-1].set_xlim(ax[0][-1].get_xlim())
-    ax[0][0].set_ylim(ax[0][1].gt_ylim())
+    ax[0][0].set_ylim(ax[0][1].get_ylim())
 
     plt.show()
 
 def parse_row(input_row, parsers):
     """
     Given list of parsers (can be None), apply appropriate one to each element
-    of input_row
+    in the input row
     """
     return [try_or_none(parser)(value) if parser is not None else value
-        for value, parser in zip(input_row, parsers)]
+                for value, parser in zip(input_row, parsers)]
+
 
 def parse_rows_with(reader, parsers):
     """
-    Wrap a reader to apply parser to each of its rows
+    Apply parser to each row by wrapping reader
     """
     for row in reader:
         yield parse_row(row, parsers)
 
+
 def try_or_none(f):
     """
-    Wraps f to return None if f raises an exception.  Assumes f takes one input_dict
+    Wraps f to return None if f raises an exception.
+    Assumes f takes single input
     """
     def f_or_none(x):
         try: return f(x)
@@ -149,9 +154,9 @@ def try_or_none(f):
 
 def try_parse_field(field_name, value, parser_dict):
     """
-    Try to parse value using function from parser_dict
+    Parse value using appropriate function from parser_dict
     """
-    parser = parser_dict.get(field_name)            #  Returns None, if no entry
+    parser = parser_dict.get(field_name)        #  None returned if no entry
     if parser is not None:
         return try_or_none(parser)(value)
     else:
@@ -159,29 +164,31 @@ def try_parse_field(field_name, value, parser_dict):
 
 
 def parse_dict(input_dict, parser_dict):
-    return { field_name : try_parse_field(field_name, value, parser_dict)
-             for field_name, value in input_dict.iteritems() }
+    """
+    Create dict of parsers
+    """
+    return {field_name: try_parse_field(field_name, value, parser_dict)
+            for field_name, value in input_dict.iteritems()}
 
 
 ##  MANIPULATING DATA
-
 def picker(field_name):
     """
-    returns function that picks a field out of a dict
+    Returns function that picks field from dict
     """
     return lambda row: row[field_name]
 
 
 def pluck(field_name, rows):
     """
-    Turn list of dicts into list of field_name values
+    Turns list for dicts into list of field_name values
     """
     return map(picker(field_name), rows)
 
 
 def group_by(grouper, rows, value_transform=None):
     """
-    Group rows by result, can apply values xform too
+    Create "group_by" function, which ability to transform data
     """
     grouped = defaultdict(list)
     for row in rows:
@@ -189,54 +196,53 @@ def group_by(grouper, rows, value_transform=None):
     if value_transform is None:
         return grouped
     else:
-        return {key: value_transform(rows) for key, rows in grouped.iteritems()}
+        return {key : value_transform(rows) for key, rows in grouped.iteritems()}
 
 
 def percent_price_change(yesterday, today):
     """
-    Calculate % price change from yesterday based on closing data
+    Calcluate price change from previous day
     """
     return today["closing_price"] / yesterday["closing_price"] - 1
 
 
 def day_over_day_changes(grouped_rows):
     """
-    Calculate percent price change for multiple groups
+    Calculate day over day change for grouped_by rows
     """
     #  Sort rows by date
-    ordered = sorted(grouped_rows, key=picker("date"))
-
-    #  ZIP with an offset toget pairs of consecutive days
+    ordered = sorted(grouped_rows, key=picker('date'))
+    #  ZIP with an offset to get pairs of consecutive days
     return [{"symbol" : today["symbol"],
              "date" : today["date"],
              "change" : percent_price_change(yesterday, today)}
              for yesterday, today in zip(ordered, ordered[1:])]
 
 
-##  RESCALING DATA
+## RESCALING DATA!!!
 def scale(data_matrix):
     """
-    Returns the means and std_dev of each columns
+    Return mean and stdev of each columm
     """
+    # pdb.set_trace()
     num_rows, num_cols = shape(data_matrix)
-    means = [mean(get_column(data_matrix, j))
-             for j in range(num_cols)]
-    stdevs = [standard_deviation(get_column(data_matrix, j))
-             for j in range(num_cols)]
-
+    print num_rows, num_cols
+    means = [mean(get_column(data_matrix,j)) for j in range(num_cols)]
+    print means
+    stdevs = [standard_deviation(get_column(data_matrix,j)) for j in range(num_cols)]
     return means, stdevs
 
 
 def rescale(data_matrix):
     """
-    Rescales input data so each col has mean = 0, stdev =  1.
-    Ignores columns with no stdev
+    Rescales input data so each column has mean = 0, stdev = 1.
+    Ignores columns with no deviation
     """
     means, stdevs = scale(data_matrix)
 
     def rescaled(i, j):
         if stdevs[j] > 0:
-            return (data_matrix[i][j] - means[j] / stdevs[j])
+            return (data_matrix[i][j] - means[j]) / stdevs[j]
         else:
             return data_matrix[i][j]
 
@@ -244,7 +250,7 @@ def rescale(data_matrix):
     return make_matrix(num_rows, num_cols, rescaled)
 
 
-##  DIMENSIONALITY REDUCTION
+## DIMENSIONALITY REDUCTION!!!
 X = [
     [20.9666776351559,-13.1138080189357],
     [22.7719907680008,-19.8890894944696],
@@ -349,8 +355,8 @@ X = [
 
 def de_mean_matrix(A):
     """
-    Returns result of subtracting from every value in A the mean value of
-    column that A is in.  Resulting matrix has mean = 0 in every column
+    Return the result of subtracting the mean from every value in A (per column).
+    Resulting matrix has mean of 0 for each column
     """
     nr, nc = shape(A)
     column_means, _ = scale(A)
@@ -359,7 +365,7 @@ def de_mean_matrix(A):
 
 def direction(w):
     """
-    Determines direction of vector
+    Create vector w magnitude of 1 for all vectors
     """
     mag = magnitude(w)
     return [w_i / mag for w_i in w]
@@ -367,21 +373,21 @@ def direction(w):
 
 def directional_variance_i(x_i, w):
     """
-    The variance of the row x_i in the direction w
+    Variance of row x_i in direction of w
     """
     return dot(x_i, direction(w)) ** 2
 
 
 def directional_variance(X, w):
     """
-    Variance of the data in direction w
+    Variance of data in direction determined by w
     """
     return sum(directional_variance_i(x_i, w) for x_i in X)
 
 
 def directional_variance_gradient_i(x_i, w):
     """
-    Contribution of row x_i to the gradient of direction w variance
+    Contribution of row x_i to gradient of direction w variance
     """
     projection_length = dot(x_i, direction(w))
     return [2 * projection_length * x_ij for x_ij in x_i]
@@ -389,37 +395,33 @@ def directional_variance_gradient_i(x_i, w):
 
 def directional_variance_gradient(X, w):
     """
-    Gradient of data in direction w
+    Variance of gradient in direction w
     """
     return vector_sum(directional_variance_gradient_i(x_i, w) for x_i in X)
 
 
 def first_principal_component(X):
     """
-    Obtains first prinicpal component, AKA the direction that maximizes
-    directional_variance function
+    First princpal component
     """
     guess = [1 for _ in X[0]]
     unscaled_maximizer = maximize_batch(
-            partial(directional_variance, X),           #  Now a function of w
-            partial(directional_variance_gradient, X),  #  Now a function of w
-            guess)
-
+                    partial(directional_variance, X),       #  Now function of w
+                    partial(directional_variance_gradient, X),  #  Now function of w
+                    guess)
     return direction(unscaled_maximizer)
 
 
 def first_principal_component_sgd(X):
     """
-    Obtains first prinicpal component, AKA the direction that maximizes
-    directional_variance function using Stochastic Gradient Descent
+    First principal component using Gradient Descent
     """
     guess = [1 for _ in X[0]]
     unscaled_maximizer = maximize_stochastic(
-        lambda x, _,: directional_variance_i(x, w),
-        lambda x, _,: directional_variance_gradient_i(x, w),
-        X, [None for _ in X], guess)
-
-    return direction(unscaled_maximizer)
+            lambda x, _, w: directional_variance_i(x, w),
+            lambda x, _, w: directional_variance_gradient_i(x, w),
+            X, [None for _ in X],
+            guess)
 
 
 def project(v, w):
@@ -432,51 +434,56 @@ def project(v, w):
 
 def remove_projection_from_vector(v, w):
     """
-    Projects v on to w, and subtracts result from v
+    Projects v on to w, subtracts result from v
     """
     return vector_subtract(v, project(v, w))
 
 
 def remove_projection(X, w):
     """
-    For each row in X, projects row[X] onto w, and subtracts result from row
+    For each row of X, project row on to w, subract result from row
     """
     return [remove_projection_from_vector(x_i, w) for x_i in X]
 
 
 def principal_component_analysis(X, num_components):
     """
-    Running Principle Component Analysis to find as many components as we desire
-    in a set of data, X
+    Run PCA on X, select the # of components you want to find
     """
     components = []
     for _ in range(num_components):
         component = first_principal_component(X)
-        component.append(component)
+        components.append(component)
         X = remove_projection(X, component)
 
     return components
 
 
-def transfrom_vector(v, components):
+def transform_vector(v, components):
     """
-    Transform vector into lower dimensional space spanned by "components"
+    Transfrom vector into lower dimensional space spanned by components
     """
     return [dot(v, w) for w in components]
 
 
 def transform(X, components):
     """
-    Transform data into lower dimensional space spanned by "components"
+    Transform dataset into lower dimensional space spanned by components
     """
     return [transform_vector(x_i, components) for x_i in X]
 
 
 if __name__ == "__main__":
-    print "correlation(xs, ys1)", correlation(xs, ys1)      #0.888984042675
-    print "correlation(xs, ys2)", correlation(xs, ys2)      #-0.899320350063
 
-    ##  Safe parsing
+    compare_two_distributions()
+
+    print "correlation(xs, ys1)", correlation(xs, ys1)      # 0.902934782603
+    print "correlation(xs, ys2)", correlation(xs, ys2)      # -0.890610527781
+
+    scatter()
+
+    ##  SAFE PARSING
+
     data = []
 
     with open("comma_delimited_stock_prices.csv", "rb") as f:
@@ -488,7 +495,8 @@ if __name__ == "__main__":
         if any(x is None for x in row):
             print row
 
-    print "STOCKS!!!"
+    print
+    print "STOCKS!!!  I'm going into STOCKS!!!"
     with open("stocks.txt", "rb") as f:
         reader = csv.DictReader(f, delimiter="\t")
         data = [parse_dict(row, { 'date' : dateutil.parser.parse,
@@ -497,28 +505,31 @@ if __name__ == "__main__":
     max_aapl_price = max(row["closing_price"]
                          for row in data
                          if row["symbol"] == "AAPL")
+    print
     print "Max AAPL Price", max_aapl_price
 
-    #  Group rows by symbol
+    #  Group Rows by Symbol
     by_symbol = defaultdict(list)
 
     for row in data:
         by_symbol[row["symbol"]].append(row)
 
-    # Use a dict comprehension to find the max for each symbol
+    # use a dict comprehension to find the max for each symbol
     max_price_by_symbol = { symbol : max(row["closing_price"]
                             for row in grouped_rows)
                             for symbol, grouped_rows in by_symbol.iteritems() }
+    print
     print "Max Price by Symbol"
     print max_price_by_symbol
 
-    # Key is symbol, value is list of "change" dicts
+    # key is symbol, value is list of "change" dicts
     changes_by_symbol = group_by(picker("symbol"), data, day_over_day_changes)
-    # Collect all "change" dicts into one big list
+    # collect all "change" dicts into one big list
     all_changes = [change
                    for changes in changes_by_symbol.values()
                    for change in changes]
 
+    print
     print "Max Change", max(all_changes, key=picker("change"))
     print "Min Change", min(all_changes, key=picker("change"))
 
@@ -537,7 +548,8 @@ if __name__ == "__main__":
     print "Overall Change by Month"
     print overall_change_by_month
 
-    print "RESCALING!!!"
+    print
+    print "RESCALING DATA!!!"
 
     data = [[1, 20, 2],
             [1, 30, 3],
@@ -547,8 +559,8 @@ if __name__ == "__main__":
     print "Scale: ", scale(data)
     print "Rescaled: ", rescale(data)
     print
-
-    print "Principal Component Analysis - PCA"
+    #
+    print "PCA"
 
     Y = de_mean_matrix(X)
     components = principal_component_analysis(Y, 2)
