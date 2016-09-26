@@ -39,7 +39,6 @@ def mean(x):
     """
     return sum(x) / len(x)
 
-
 def median(v):
     """
     Find median, "middle-most" value of data
