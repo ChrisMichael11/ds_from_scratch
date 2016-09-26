@@ -83,14 +83,14 @@ def distance(v, w):
 
 def shape(A):
     num_rows = len(A)
-    num_cols = len(A[0]) if A else 0        #  Num elements in first row
+    num_cols = len(A[0]) if A else 0
     return num_rows, num_cols
 
 def get_row(A, i):
     return A[i]             # A[i] is already the i-th row
 
 def get_column(A, j):
-    return [A[j] for A_i in A]      # jth element in A_i, for each row A_i
+    return [A_i[j] for A_i in A]      # jth element in A_i, for each row A_i
 
 def make_matrix(num_rows, num_cols, entry_fn):
     """
