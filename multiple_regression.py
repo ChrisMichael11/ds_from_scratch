@@ -91,7 +91,7 @@ def p_value(beta_hat_j, sigma_hat_j):
         return 2 * (1 - normal_cdf(beta_hat_j / sigma_hat_j))
     else:
         #  Otherwise, twice the probabilty of seeing a *smaller* value
-        return 2 * normal_cdf(beta_hat_j / simga_hat_j)
+        return 2 * normal_cdf(beta_hat_j / sigma_hat_j)
 
 
 ###  REGULARIZED REGRESSION
@@ -114,7 +114,7 @@ def squared_error_ridge(x_i, y_i, beta, alpha):
     return error(x_i, y_i, beta) ** 2 + ridge_penalty(beta, alpha)
 
 
-def ridge_penalt_gradient(beta, alpha):
+def ridge_penalty_gradient(beta, alpha):
     """
     Gradient on Ridge penalty
     """
