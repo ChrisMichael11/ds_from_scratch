@@ -226,9 +226,9 @@ def scale(data_matrix):
     """
     # pdb.set_trace()
     num_rows, num_cols = shape(data_matrix)
-    print num_rows, num_cols
+    # print num_rows, num_cols
     means = [mean(get_column(data_matrix,j)) for j in range(num_cols)]
-    print means
+    # print means
     stdevs = [standard_deviation(get_column(data_matrix,j)) for j in range(num_cols)]
     return means, stdevs
 
