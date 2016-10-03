@@ -82,7 +82,7 @@ def classify(tree, input):
     if subtree_key not in subtree_dict:     #  If no subtree for key
         subtree_key = None                  #  Use None subtree
 
-    subtree = subtree_dict[subtee_key]      #  Choose appropriate subtree
+    subtree = subtree_dict[subtree_key]      #  Choose appropriate subtree
     return classify(subtree, input)         #  Use to classify input
 
 
@@ -103,9 +103,9 @@ def build_tree_id3(inputs, split_candidates=None):
     if num_trues == 0:          #  If only Falses left
         return False            #  Return False leaf
     if num_falses == 0:         #  If only Trues left
-        return Trues            #  Return True leaf
+        return True             #  Return True leaf
     if not split_candidates:    #  if no split_candidates left
-        return num_trees >= num_falses  #  Return majority leaf
+        return num_truess >= num_falses  #  Return majority leaf
 
     #  Otherwise, split on best attribute
     best_attribute = min(split_candidates,
@@ -119,7 +119,7 @@ def build_tree_id3(inputs, split_candidates=None):
     subtrees = {attribute : build_tree_id3(subset, new_candidates)
                 for attribute, subset in partitions.iteritems()}
 
-    subtrees[None] = num_trees > num_falses     #  Default case
+    subtrees[None] = num_trues > num_falses     #  Default case
 
     return (best_attribute, subtrees)
 
