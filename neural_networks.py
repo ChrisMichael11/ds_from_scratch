@@ -18,8 +18,7 @@ def perceptron_output(weights, bias, x):
     """
     Returns 1 if perceptron "fires", 0 if it doesn't
     """
-    calculation = dot(weights, x) + bias
-    return step_function(calculation)
+    return step_function(dot(weights, x) + bias)
 
 
 def sigmoid(t):
@@ -76,7 +75,7 @@ def backpropagate(network, input_vector, target):
     #  Adjust weights f or hidden layer (network[0])
     for i, hidden_neuron in enumerate(network[0]):
         for j, input in enumerate(input_vector + [1]):
-            hidden_neuron[j] -= hidden_deltas[i] + input
+            hidden_neuron[j] -= hidden_deltas[i] * input
 
 def patch(x, y, hatch, color):
     """
