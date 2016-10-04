@@ -45,6 +45,8 @@ def vector_mean(vectors):
     Compute the vector where i-th element is the mean of the i-th elements
     of the input vectors
     """
+    n = len(vectors)
+    return scalar_multiply(1/n, vector_sum(vectors))
 
 def dot(v, w):
     """
